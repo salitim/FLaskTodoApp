@@ -55,7 +55,7 @@ def create_todo():
   if not error:
    return jsonify(body)
 
-@app.route('/todos/<todo_id>/set-completed', methods=['POST'])
+@app.route('/lists/todos/<todo_id>/set-completed', methods=['POST'])
 def set_completed_todo(todo_id):
     try:
       completed = request.get_json()['completed']
@@ -65,7 +65,7 @@ def set_completed_todo(todo_id):
     except:
       db.session.rollback()
     finally:
-      dbsession.close()
+      db.session.close()
     return redirect(url_for('index'))
 
 @app.route('/todos/<todo_id>', methods=['DELETE'])
@@ -108,18 +108,19 @@ def create_todo_list():
   if not error:
    return jsonify(body)
 
-@app.route('/<list_id>/set-completed', methods=['POST'])
+@app.route('/lists/<list_id>/set-completed', methods=['POST'])
 def set_completed_list(list_id):
     try:
       completed = request.get_json()['completed']
       print(completed)
       list = TodoList.query.get(list_id)
       list.completed = completed
+      db.session.query(Todo.completed).update({'completed': completed})
       db.session.commit()
     except:
       db.session.rollback()
     finally:
-      dbsession.close()
+      db.session.close()
     return redirect(url_for('index'))
 
 @app.route('/lists/<list_id>', methods=['DELETE'])
