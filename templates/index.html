@@ -32,13 +32,19 @@
   </head>
   <body>
     <div class="lists-wrapper">
-      <ul>
+      <form id="list-form" method="post" action="/lists/create">
+        <input type="text" id="name" name="name" />
+        <input type="submit" value="Create" />
+      </form>
+      <ul id="lists">
         {% for list in lists %}
         <li>
           <a href="{{ list.id }}">
+            <input class="check-list-completed" data-id="{{ list.id }}" type="checkbox" {%if list.completed %} checked {% endif %} />
             {{ list.name }}
           </a>
-        </li>
+          <button class="delete-list-button" data-id="{{ list.id }}">&cross;</button>
+        </li>       
         {% endfor %}
       </ul>
     </div>
@@ -135,6 +141,88 @@
         .catch(function() {
           document.getElementById('error').className = '';
         })
+      }
+      ///////////////////////////////////////////////////////
+      const nameInput = document.getElementById('name');
+      document.getElementById('list-form').onsubmit = function(e) {
+        e.preventDefault();
+        const name = nameInput.value;
+        nameInput.value = '';
+        fetch('/lists/create', {
+          method: 'POST',
+          body: JSON.stringify({
+            'name': name,
+          }),
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        })
+        .then(response => response.json())
+        .then(jsonResponse => {
+          console.log('response', jsonResponse);
+          li = document.createElement('li');
+          
+          const checkbox = document.createElement('input');
+          checkbox.className = 'check-completed';
+          checkbox.type = 'checkbox';
+          checkbox.setAttribute('data-id', jsonResponse.id);
+          li.appendChild(checkbox);
+          const text = document.createTextNode(' ' + jsonResponse.name);
+          li.appendChild(text);
+          const deleteBtn = document.createElement('button');
+          deleteBtn.className = 'delete-button';
+          deleteBtn.setAttribute('data-id', jsonResponse.id);
+          deleteBtn.innerHTML = '&cross;';
+          li.appendChild(deleteBtn);
+          document.getElementById('lists').appendChild(li);
+          document.getElementById('error').className = 'hidden';
+        })
+        .catch(function() {
+          document.getElementById('error').className = '';
+        })
+      }
+
+      const checkboxesList = document.querySelectorAll('.check-list-completed');
+      for (let i=0; i < checkboxesList.length; i++) {
+        const checkbox = checkboxesList[i];
+        checkbox.onchange = function(e){
+          console.log(e.target.checked);
+          const newCompleted = e.target.checked;
+          const listId = e.target.dataset['id'];
+          console.log(listId)
+          fetch('/'+listId +'/set-completed', {
+            method: 'POST',
+            body: JSON.stringify({
+            'completed': newCompleted
+          }),
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          })
+          .then(function(){
+            document.getElementById('error').className = 'hidden';
+          })
+          .catch(function() {
+            document.getElementById('error').className = '';
+          })
+        }
+      }
+
+      const deleteBtnsList = document.querySelectorAll('.delete-list-button');
+      for (let i = 0; i < deleteBtnsList.length; i++) {
+        const btn = deleteBtnsList[i];
+        btn.onclick = function(e) {
+          const listId = e.target.dataset['id'];
+          fetch('/lists/' + listId, {
+            method: 'DELETE'
+          })
+          .then(function() {
+            console.log(listId);
+            console.log(e.target.parentElement)
+            const item = e.target.parentElement;
+            item.remove();
+          });
+        }
       }
     </script>
   </body>
